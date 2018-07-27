@@ -1,25 +1,21 @@
 const fileStream = require('fs');
 
-let data = parseCsv('resources/data.csv');
-let target = {
-	u: 0.28295,
-	v: 0.4689
-};
-//colors = {r: 40, g: 10, b: 80, w: 0, a: 35};
-//let mix = mixColor(colors);
-//iterateRandomColors(1000000);
-successiveApproximateColors(10000);
+//TODO Add option to get brighter results
+let data = parseDataCsv('resources/data.csv');
+runBatch('resources/target.csv');
 
-function parseCsv(path) {
-	let dataFile = fileStream.readFileSync(path, 'utf-8');
-
-	let dataRows = dataFile.split('\n');
-	let gamma = {};
-
+function parseDataCsv(path) {
+	//TODO Remove unsafe dynamic name casting
+	let values, color, gamma = {};
 	try {
+		let dataFile = fileStream.readFileSync(path, 'utf-8');
+
+		let dataRows = dataFile.split('\n');
+
+
 		dataRows.forEach((row) => {
-			let values = row.split(';');
-			let color = values[0];
+			values = row.split(';');
+			color = values[0];
 			if (color) {
 				gamma[color] = {};
 				if (values[1]) gamma[color].Lv = Number(values[1].trim().replace(',', '.'));
@@ -35,6 +31,72 @@ function parseCsv(path) {
 		throw new EvalError('Can\'t parse csv')
 	}
 	return gamma;
+}
+
+function parseTargetCsv(path) {
+	let values, targets = [];
+	try {
+		let dataFile = fileStream.readFileSync(path, 'utf-8');
+
+		let dataRows = dataFile.split('\n');
+
+		dataRows.forEach((row, i) => {
+			if (i > 0 && row) {
+				values = row.split(';');
+				if (!values[0]) return;
+				//i-1 because we throw away the 0. row witch is the header
+				targets[i - 1] = {};
+				targets[i - 1].name = values[0];
+				targets[i - 1].u = Number(values[1].trim().replace(',', '.'));
+				targets[i - 1].v = Number(values[2].trim().replace(',', '.'));
+			}
+		});
+	}
+	catch (e) {
+		console.log(e);
+		throw new EvalError(`Can't parse csv`)
+	}
+	return targets;
+}
+
+function runBatch(path, iterations) {
+	iterations = iterations || 10000;
+
+	let targets = parseTargetCsv(path);
+	let results = [];
+	let time = Date.now();
+
+	targets.forEach((target, i) => {
+		results[i] = {};
+		results[i] = successiveApproximateColors(iterations, target);
+		results[i].name = target.name;
+		results[i].targetU = target.u;
+		results[i].targetV = target.v;
+	});
+	console.log(`${targets.length} record was calculated in a total of ${(Date.now()-time)/1000} seconds`);
+	printToFile('results.csv', results)
+}
+
+function printToFile(name, data) {
+	let csv = "", keys;
+
+//Dynamic header generate
+	//keys = Object.keys(data[0]);
+	keys = ['name', 'u', 'v', 'targetU', 'targetV', 'd', 'R', 'G', 'B', 'W', 'A'];
+	keys.forEach((key) => {
+		csv += `${key};`
+	});
+	data.forEach((row) => {
+		csv += '\n';
+		csv +=
+			`${row.name};${row.u};${row.v};${row.targetU};${row.targetV};${row.d};\
+			${row.colors.r};${row.colors.g};${row.colors.b};${row.colors.w};${row.colors.a}`;
+	});
+
+	fileStream.writeFile('results.csv', csv, (err) => {
+		if (err) throw err;
+		console.log('The file has been saved!');
+	});
 }
 
 function getGamma(color, value) {
@@ -150,7 +212,6 @@ function getV(colorMix) {
 	return 9 * y / (getxyz('x', colorMix) + 15 * y + 3 * getxyz('z', colorMix))
 }
 
-// TODO Change parameter list to object
 function mixColor(colors) {
 	let mix = [];
 	/* With ternary operator to eliminate the null point errors
@@ -210,12 +271,8 @@ function generateRandomColorsInRange(colors, range) {
 	}
 }
 
-//TODO Add option for pass iterator
-function iterateRandomColors(iterations) {
-	console.log('###### TARGET #####');
-	console.log(target);
-	console.log('###### TARGET #####');
-	iterations = iterations || 100000;
+function iterateRandomColors(iterations, target) {
+	iterations = iterations || 10000;
 	let min = {};
 
 	let colors, u, v, d;
@@ -257,22 +314,27 @@ function iterateRandomColors(iterations) {
 			}
 		}
 	}
-	console.log(min);
-	console.log(`There is ${a} better and ${b} equivalent `);
+	console.log(`Generate starting point \nThere was ${a} better and ${b} equivalent `);
 
 	return min
 }
 
-//TODO Check if the conditions are good
-function successiveApproximateColors(iterations) {
-	iterations = iterations || 100000;
-	let min = iterateRandomColors(iterations);
+function successiveApproximateColors(iterations, target) {
+
+	console.log('###### TARGET #####');
+	console.log(target);
+	console.log('###### TARGET #####');
+
+	iterations = iterations || 10000;
+	let colors, u, v, d, iterationCount = 0;
 	let a = 0, b = 0;
-	let colors, u, v, d;
+	let time = Date.now();
+	let min = iterateRandomColors(2 * iterations, target);
+	iterationCount += 2 * iterations;
 
 	for (let j = 6; j > 0; j--) {
 		for (let i = 0; i < iterations; i++) {
-			if (i % 10000 === 0) console.log(`${i} iterations \n Where the d=${min.d}`);
+			if (iterationCount % 10000 === 0) console.log(`${iterationCount} iterations: Where the d=${min.d}`);
 			colors = generateRandomColorsInRange(min.colors, Math.pow(2, j));
 			//Initialize the min
 			u = getU(mixColor(colors));
@@ -296,23 +358,12 @@ function successiveApproximateColors(iterations) {
 					b++
 				}
 			}
+			iterationCount++
 		}
 	}
+	min.Lv = getSumLv(min.colors);
 	console.log(min);
-	console.log(`There is ${a} better and ${b} equivalent `);
+	console.log(`There was ${a} better and ${b} equivalent`);
+	console.log(`Calculation took ${(Date.now() - time) / 1000} second(s) \n\n`);
 	return min
 }
-
-/*
-100k
-{ d: 0.008875013185476878,
-  colors: { r: 197, g: 74, b: 5, w: 76, a: 205 },
-  u: 0.3463038657685725,
-  v: 0.5386230297509694 }
-
-  1M
-  { d: 0.009113169483063191,
-  colors: { r: 131, g: 229, b: 19, w: 18, a: 97 },
-  u: 0.23335707631309408,
-  v: 0.5504702850506722 }
- */
