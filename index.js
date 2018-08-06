@@ -1,8 +1,9 @@
 const fileStream = require('fs');
+const options = require('./resources/options');
 
 //TODO Add option to get brighter results
-let data = parseDataCsv('resources/data.csv');
-runBatch('resources/target.csv');
+let data = parseDataCsv(`resources/${options.sourceName}`);
+runBatch(`resources/${options.targetName}`);
 
 function parseDataCsv(path) {
 	//TODO Remove unsafe dynamic name casting
@@ -73,8 +74,8 @@ function runBatch(path, iterations) {
 		results[i].targetU = target.u;
 		results[i].targetV = target.v;
 	});
-	console.log(`${targets.length} record was calculated in a total of ${(Date.now()-time)/1000} seconds`);
-	printToFile('results.csv', results)
+	console.log(`${targets.length} record was calculated in a total of ${(Date.now() - time) / 1000} seconds`);
+	printToFile(options.resultName, results)
 }
 
 function printToFile(name, data) {
@@ -95,7 +96,7 @@ function printToFile(name, data) {
 
 	fileStream.writeFile('results.csv', csv, (err) => {
 		if (err) throw err;
-		console.log('The file has been saved!');
+		console.log(`The file has been saved to ${options.resultName}!`);
 	});
 }
 
@@ -271,54 +272,6 @@ function generateRandomColorsInRange(colors, range) {
 	}
 }
 
-function iterateRandomColors(iterations, target) {
-	iterations = iterations || 10000;
-	let min = {};
-
-	let colors, u, v, d;
-	let a = 0, b = 0;
-
-	for (let i = 0; i < iterations; i++) {
-		if (i % 10000 === 0) console.log(`${i} iterations`);
-		colors = generateRandomColors();
-		//Initialize the min
-		if (i === 0) {
-			u = getU(mixColor(colors));
-			v = getV(mixColor(colors));
-			min.d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
-			min.colors = colors;
-			min.u = u;
-			min.v = v;
-		}
-		else {
-			u = getU(mixColor(colors));
-			v = getV(mixColor(colors));
-			d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
-			if (min.d > d) {
-				min.colors = colors;
-				min.u = u;
-				min.v = v;
-				min.d = d;
-				a++;
-			}
-			else if (min.d === Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2)) {
-				let minLv = getSumLv(min.colors);
-				let Lv = getSumLv(colors);
-				if (Lv > minLv && Lv < 8) {
-					min.colors = colors;
-					min.u = u;
-					min.v = v;
-					min.d = d;
-					b++;
-				}
-			}
-		}
-	}
-	console.log(`Generate starting point \nThere was ${a} better and ${b} equivalent `);
-
-	return min
-}
-
 function successiveApproximateColors(iterations, target) {
 
 	console.log('###### TARGET #####');
@@ -329,8 +282,9 @@ function successiveApproximateColors(iterations, target) {
 	let colors, u, v, d, iterationCount = 0;
 	let a = 0, b = 0;
 	let time = Date.now();
-	let min = iterateRandomColors(2 * iterations, target);
-	iterationCount += 2 * iterations;
+	let randomResult = iterateRandomColors(10 * iterations, target);
+	let min = randomResult[0];
+	iterationCount += randomResult[1];
 
 	for (let j = 6; j > 0; j--) {
 		for (let i = 0; i < iterations; i++) {
@@ -366,4 +320,93 @@ function successiveApproximateColors(iterations, target) {
 	console.log(`There was ${a} better and ${b} equivalent`);
 	console.log(`Calculation took ${(Date.now() - time) / 1000} second(s) \n\n`);
 	return min
+}
+
+function iterateRandomColors(iterations, target) {
+	iterations = iterations || 10000;
+	let minArr = [];
+	let diffArr = [];
+
+	let colors, u, v, d;
+	let improvement = 0, b = 0;
+
+	/*
+	let min = {};
+	for (let i = 0; i < iterations; i++) {
+		if (i % 10000 === 0 && i !== 0) console.log(`${i} iterations`);
+		colors = generateRandomColors();
+		//Initialize the min
+		if (i === 0) {
+			u = getU(mixColor(colors));
+			v = getV(mixColor(colors));
+			min.d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
+			min.colors = colors;
+			min.u = u;
+			min.v = v;
+		}
+		else {
+			u = getU(mixColor(colors));
+			v = getV(mixColor(colors));
+			d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
+			if (min.d > d) {
+				min.colors = colors;
+				min.u = u;
+				min.v = v;
+				min.d = d;
+				improvement++;
+			}
+			else if (min.d === Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2)) {
+				let minLv = getSumLv(min.colors);
+				let Lv = getSumLv(colors);
+				if (Lv > minLv && Lv < 8) {
+					min.colors = colors;
+					min.u = u;
+					min.v = v;
+					min.d = d;
+					b++;
+				}
+			}
+		}
+	}*/
+	for (let i = 0; i < iterations; i++) {
+		if (i % 10000 === 0 && i !== 0) console.log(`${i} iterations`);
+		colors = generateRandomColors();
+		if (i < 100) {
+			u = getU(mixColor(colors));
+			v = getV(mixColor(colors));
+			minArr[i] = {};
+			minArr[i].d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
+			minArr[i].colors = colors;
+			minArr[i].u = u;
+			minArr[i].v = v;
+		}
+		else {
+			u = getU(mixColor(colors));
+			v = getV(mixColor(colors));
+			d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
+			try {
+				minArr.forEach((minimum, iter) => {
+					if (minArr[iter].d > d) {
+						minArr[iter].colors = colors;
+						minArr[iter].u = u;
+						minArr[iter].v = v;
+						minArr[iter].d = d;
+						improvement++;
+						throw new TypeError('Success')
+					}
+				})
+			}
+				//Break out from forEach loop
+			catch (e) {
+			}
+		}
+	}
+
+	minArr.forEach((el, i) => {
+		diffArr[i] = Math.abs(options.targetIntensity - el.Lv)
+	});
+	let indexOfMinValue = diffArr.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0);
+
+	console.log(`Generate starting point \nThere was ${improvement} better and ${b} equivalent `);
+	return [minArr[indexOfMinValue], iterations]
 }

@@ -1,0 +1,9 @@
+{
+  "_comment":"Iteration per approximation round. Multiplier is used in the first iteration draft",
+  "iterations": 10000,
+  "iterationMultiplier": 10,
+  "targetIntensity": 2,
+  "sourceName": "data.csv",
+  "targetName": "target2.csv",
+  "resultName": "result2.csv"
+}
