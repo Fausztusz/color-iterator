@@ -1,9 +1,54 @@
 {
-  "_comment":"Iteration per approximation round. Multiplier is used in the first iteration draft",
+  "__comment__": "Iteration per approximation round. Multiplier is used in the first iteration draft",
   "iterations": 10000,
-  "iterationMultiplier": 10,
-  "targetIntensity": 2,
+  "minArray":100,
+  "iterationMultiplier": 5,
+  "targetIntensity": 3.5,
   "sourceName": "data.csv",
   "targetName": "target2.csv",
-  "resultName": "result2.csv"
+  "resultName": "result2.csv",
+  "fitting": {
+    "R": {
+      "a": 0.0074,
+      "b": -0.146,
+      "limit": 25,
+      "cubic": {
+        "a": 0.000002,
+        "b": 0.00002,
+        "c": -0.0002,
+        "d": -0.0000000000000009
+      }
+    },
+    "G": {
+      "a": 0.0101,
+      "b": -0.0069
+    },
+    "B": {
+      "a": 0.0082,
+      "b": -0.2287,
+      "limit": 30,
+      "quad": {
+        "a": -6E-08,
+        "b": 6E-06,
+        "c": -9E-05,
+        "d": 0.0003,
+        "e": 4E-05
+      }
+    },
+    "W": {
+      "a": 0.0113,
+      "b": 0.0213
+    },
+    "A": {
+      "a": 0.0095,
+      "b": -0.2001,
+      "limit": 25,
+      "cubic": {
+        "a": 0.000006,
+        "b": -0.0001,
+        "c": 0.0006,
+        "d": -0.00008
+      }
+    }
+  }
 }

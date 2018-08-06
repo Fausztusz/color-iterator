@@ -104,47 +104,45 @@ function getGamma(color, value) {
 
 	if (value < 0 || value > 255) throw new RangeError('The value must be between 0 and 255');
 
-	let r = {}, g = {}, b = {}, w = {}, a = {};
-	r.a = 0.0074;
-	r.b = -0.146;
-	g.a = 0.0101;
-	g.b = -0.0069;
-	b.a = 0.0082;
-	b.b = -0.2287;
-	w.a = 0.0113;
-	w.b = 0.0213;
-	a.a = 0.0095;
-	a.b = -0.2001;
-
 	let Lv;
 	switch (color) {
 		case 'r':
 		case 'R':
-			if (value > 25) Lv = value * r.a + r.b;
-			else Lv = 0.000002 * Math.pow(value, 3) + 0.00002 * Math.pow(value, 2) - 0.0002 * value - 0.0000000000000009;
+			if (value > options.fitting.R.limit) Lv = value * options.fitting.R.a + options.fitting.R.b;
+			else Lv = options.fitting.R.cubic.a * Math.pow(value, 3)
+				+ options.fitting.R.cubic.b * Math.pow(value, 2)
+				+ options.fitting.R.cubic.c * value
+				+ options.fitting.R.cubic.d;
 			break;
 		case 'g':
 		case 'G':
-			Lv = value * g.a + g.b;
+			Lv = value * options.fitting.G.a + options.fitting.G.b;
 			break;
 		case 'b':
 		case 'B':
-			if (value > 30) Lv = value * b.a + b.b;
+			if (value > options.fitting.B.limit) Lv = value * options.fitting.B.a + options.fitting.B.b;
 			//else Lv = 0.000002 * Math.pow(value, 3) - 0.00002 * Math.pow(value, 2) - 0.0001 * value + 0.0002;
-			else Lv = -6E-08 * Math.pow(value, 4) + 6E-06 * Math.pow(value, 3) - 9E-05 * Math.pow(value, 2) + 0.0003 * value + 4E-05;
+			else Lv = options.fitting.B.quad.a * Math.pow(value, 4)
+				+ options.fitting.B.quad.b * Math.pow(value, 3)
+				+ options.fitting.B.quad.c * Math.pow(value, 2)
+				+ options.fitting.B.quad.d * value
+				+ options.fitting.B.quad.e;
 			break;
 		case 'w':
 		case 'W':
-			Lv = value * w.a + w.b;
+			Lv = value * options.fitting.W.a + options.fitting.W.b;
 			break;
 		case 'a':
 		case 'A':
-			if (value > 25) Lv = value * a.a + a.b;
-			else Lv = 0.000006 * Math.pow(value, 3) - 0.0001 * Math.pow(value, 2) + 0.0006 * value - 0.00008;
+			if (value > options.fitting.A.limit) Lv = value * options.fitting.A.a + options.fitting.A.b;
+			else Lv = options.fitting.A.cubic.a * Math.pow(value, 3)
+				+ options.fitting.A.cubic.b * Math.pow(value, 2)
+				+ options.fitting.A.cubic.c * value
+				+ options.fitting.A.cubic.d;
 			break;
 
 		default:
-			throw new Error('Not valid colors');
+			throw new Error('Not valid color');
 	}
 	return Lv
 }
@@ -280,13 +278,13 @@ function successiveApproximateColors(iterations, target) {
 
 	iterations = iterations || 10000;
 	let colors, u, v, d, iterationCount = 0;
-	let a = 0, b = 0;
+	let improvement = 0, b = 0;
 	let time = Date.now();
-	let randomResult = iterateRandomColors(10 * iterations, target);
+	let randomResult = iterateRandomColors(options.iterationMultiplier * iterations, target);
 	let min = randomResult[0];
 	iterationCount += randomResult[1];
 
-	for (let j = 6; j > 0; j--) {
+	for (let j = 6; j > 2; j--) {
 		for (let i = 0; i < iterations; i++) {
 			if (iterationCount % 10000 === 0) console.log(`${iterationCount} iterations: Where the d=${min.d}`);
 			colors = generateRandomColorsInRange(min.colors, Math.pow(2, j));
@@ -299,12 +297,12 @@ function successiveApproximateColors(iterations, target) {
 				min.u = u;
 				min.v = v;
 				min.d = d;
-				a++;
+				improvement++;
 			}
 			else if (min.d === d) {
 				let minLv = getSumLv(min.colors);
 				let Lv = getSumLv(colors);
-				if (Lv > minLv && Lv < 8) {
+				if (Lv > minLv) {
 					min.colors = colors;
 					min.u = u;
 					min.v = v;
@@ -317,7 +315,7 @@ function successiveApproximateColors(iterations, target) {
 	}
 	min.Lv = getSumLv(min.colors);
 	console.log(min);
-	console.log(`There was ${a} better and ${b} equivalent`);
+	console.log(`There was ${improvement} improvement`);
 	console.log(`Calculation took ${(Date.now() - time) / 1000} second(s) \n\n`);
 	return min
 }
@@ -371,7 +369,7 @@ function iterateRandomColors(iterations, target) {
 	for (let i = 0; i < iterations; i++) {
 		if (i % 10000 === 0 && i !== 0) console.log(`${i} iterations`);
 		colors = generateRandomColors();
-		if (i < 100) {
+		if (i < options.minArray) {
 			u = getU(mixColor(colors));
 			v = getV(mixColor(colors));
 			minArr[i] = {};
@@ -405,7 +403,7 @@ function iterateRandomColors(iterations, target) {
 	minArr.forEach((el, i) => {
 		diffArr[i] = Math.abs(options.targetIntensity - el.Lv)
 	});
-	let indexOfMinValue = diffArr.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0);
+	let indexOfMinValue = diffArr.reduce((iMin, x, i, arr) => x > arr[iMin] ? i : iMin, 0);
 
 	console.log(`Generate starting point \nThere was ${improvement} better and ${b} equivalent `);
 	return [minArr[indexOfMinValue], iterations]
