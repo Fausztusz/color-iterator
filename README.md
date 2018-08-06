@@ -7,7 +7,7 @@ The program find RGBWA color coordinates from given u'v' color space coordinates
 node index
 ~~~
 
-#Options
+# Options
 The _resources/options.json_ file contains the names of the used files and the
 parameters of the fitted curves
 
