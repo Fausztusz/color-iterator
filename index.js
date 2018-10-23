@@ -383,6 +383,7 @@ function iterateRandomColors(iterations, target) {
 			v = getV(mixColor(colors));
 			d = Math.pow(target.u - u, 2) + Math.pow(target.v - v, 2);
 			try {
+				//TODO Implement proper minimum selection here
 				minArr.forEach((minimum, iter) => {
 					if (minArr[iter].d > d) {
 						minArr[iter].colors = colors;

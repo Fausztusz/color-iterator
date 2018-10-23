@@ -3,9 +3,9 @@
   "iterations": 10000,
   "minArray":100,
   "iterationMultiplier": 5,
-  "targetIntensity": 3.5,
+  "targetIntensity": 10,
   "sourceName": "data.csv",
-  "targetName": "target2.csv",
+  "targetName": "targyet2.csv",
   "resultName": "result2.csv",
   "fitting": {
     "R": {

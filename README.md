@@ -1,5 +1,5 @@
 # Color Iterator
-The program find RGBWA color coordinates from given u'v' color space coordinates 
+The program find RGBWA color coordinates from given _u' v'_ color space coordinates 
 
 # Usage
 **Run program with [node.js](https://nodejs.org) from command line**
